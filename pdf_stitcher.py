@@ -54,14 +54,14 @@ class Stitcher:
 
     def parse_args(self):
         parser = argparse.ArgumentParser(
-                            prog='PDF Stitcher',
-                            description='Stitches 2 pages of a PDF file')
-        parser.add_argument('-c', '--concatenate', action='store_true')
-        parser.add_argument('-f', '--file', required=True)
+                            prog='pdf_stitcher',
+                            description='Stitches 2 pages of a PDF file  (or 2 image files)')
+        parser.add_argument('-c', '--concatenate', action='store_true', help='Concatenate images - No stitching')
+        parser.add_argument('-f', '--file', required=True, help='File name (PDF or an  image)')
         parser.add_argument('--file2', help='Second Image if first file is an image')
         parser.add_argument('--page1', type=int, default=0, help='First page of the PDF file')
         parser.add_argument('--page2', type=int, default=0, help='Second page of the PDF file')
-        parser.add_argument('-v', '--vertical', action='store_true')
+        parser.add_argument('-v', '--vertical', action='store_true', help='Supported only for concatenate')
         args = parser.parse_args()
         print(f"Arguments = {args}")
         return args
