@@ -47,6 +47,9 @@ class Stitcher:
                 exit(-3)
             img_0 = cv2.imread(args.file)
             img_1 = cv2.imread(args.file2)
+        if args.vertical and self.mode == 'stitch':
+            img_0 = cv2.rotate(img_0, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            img_1 = cv2.rotate(img_1, cv2.ROTATE_90_CLOCKWISE)
         print("-- Images --")
         print(f"Sizes: {img_0.size} // {img_1.size}")
         print(f"Shapes: {img_0.shape} // {img_1.shape}")

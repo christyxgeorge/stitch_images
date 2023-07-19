@@ -3,8 +3,7 @@
 
 Useful for stitching pages that are larger than the scanner can handle. Scan into multiple pages and use this to stitch them together. In some cases, we may need to stitch multiple pages into separate image files and then stitch those images to create the final image. Have tried with 6 pages (2 x 3) scanned image and worked flawlessly!
 
-For vertical stitching, rotate the images/pages appropriately before stitching.
-
+For vertical stitching, The first page/image is rotated counter-clockwise and the second page/image is rotated clockwise.
 
 # Dependencies
 install poppler-cpp (using macports or brew) - Needed by python-poppler
@@ -23,6 +22,9 @@ options:
   --page1 PAGE1         First page of the PDF file
   --page2 PAGE2         Second page of the PDF file
   -v, --vertical        Supported only for concatenate
+
+# Issues:
+1. There is a bluish tinge to the output. Need to figure this.
 
 # References:
 1. https://pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
