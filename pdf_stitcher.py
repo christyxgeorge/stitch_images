@@ -74,7 +74,7 @@ class Stitcher:
             (result, vis) = self.stitch(showMatches=True)
             cv2.imshow("Keypoint Matches", vis)
         else:
-            result = my_stitcher.concatenate()
+            result = self.concatenate()
 
         if result.any():
             print()
@@ -114,6 +114,10 @@ class Stitcher:
             (imageA.shape[1] + imageB.shape[1], imageA.shape[0]))
 
         result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
+
+        # if vertical, we turn it clockwise to make it vertical!
+        if self.args.vertical:
+            result = cv2.rotate(result, cv2.ROTATE_90_CLOCKWISE)
 
         # check to see if the keypoint matches should be visualized
         if showMatches:
