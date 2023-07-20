@@ -117,7 +117,7 @@ class Stitcher:
         # keypoints to create a panorama
         if M is None:
             return None
-           # otherwise, apply a perspective warp to stitch the images
+        # otherwise, apply a perspective warp to stitch the images
         # together
         (matches, H, status) = M
         # print(f"Sizes: {imageA.size[1]} / {imageB.size[1]} / {imageA.size[0]}")
