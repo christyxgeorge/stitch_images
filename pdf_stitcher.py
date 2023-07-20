@@ -21,14 +21,16 @@ import os
 from typing import Any
 
 class Stitcher:
-    def __init__(self, file1, file2=None, page1=0, page2=0, concatenate=False, vertical=False):
+    def __init__(
+        self, file1, file2=None, page1=0, page2=0, concatenate=False, vertical=False, show_matches=False
+    ):
         self.root_dir = os.path.dirname(os.path.abspath(file1))
         self.mode = 'concatenate' if concatenate else 'stitch'
         self.horizontal = False if vertical else True
         print(f"Mode: {self.mode}, Root Dir = {self.root_dir}, File = {file1}")
         self.img_0, self.img_1 = self.setup_images(file1, file2, page1, page2)
         self.output_file = self.get_output_filename(file1, file2, page1, page2)
-        self.show_keypoint_matches = False
+        self.show_keypoint_matches = show_matches
 
     @classmethod
     def parse_args(cls):
@@ -41,6 +43,7 @@ class Stitcher:
         parser.add_argument('--page1', type=int, default=0, help='First page of the PDF file')
         parser.add_argument('--page2', type=int, default=0, help='Second page of the PDF file')
         parser.add_argument('-v', '--vertical', action='store_true', help='Supported only for concatenate')
+        parser.add_argument('-m', '--matches', action='store_true', help='Show keypoint matches')
         args = parser.parse_args()
         print(f"Arguments = {args}")
         if args.file1.endswith('.pdf'): # PDF File
@@ -214,6 +217,7 @@ class Stitcher:
 if __name__ == '__main__':
     args = Stitcher.parse_args()
     stitcher = Stitcher(
-        args.file1, args.file2, args.page1, args.page2, concatenate=args.concatenate, vertical=args.vertical
+        args.file1, args.file2, args.page1, args.page2,
+        concatenate=args.concatenate, vertical=args.vertical, show_matches=args.matches
     )
     stitcher.process()
