@@ -21,69 +21,77 @@ import os
 from typing import Any
 
 class Stitcher:
-    def __init__(self):
-        self.args = self.parse_args()
-        self.root_dir = os.path.dirname(os.path.abspath(self.args.file))
-        self.mode = 'concatenate' if self.args.concatenate else 'stitch'
-        print(f"Mode: {self.mode}, Root Dir = {self.root_dir}, File = {self.args.file}")
-        self.img_0, self.img_1 = self.setup_images(self.args)
-        self.horizontal = False if self.args.vertical else True
+    def __init__(self, file1, file2=None, page1=0, page2=0, concatenate=False, vertical=False):
+        self.root_dir = os.path.dirname(os.path.abspath(file1))
+        self.mode = 'concatenate' if concatenate else 'stitch'
+        self.horizontal = False if vertical else True
+        print(f"Mode: {self.mode}, Root Dir = {self.root_dir}, File = {file1}")
+        self.img_0, self.img_1 = self.setup_images(file1, file2, page1, page2)
+        self.output_file = self.get_output_filename(file1, file2, page1, page2)
+        self.show_keypoint_matches = False
 
-    def setup_images(self, args):
-        if args.file.endswith('.pdf'):
-            if not args.page1 and not args.page2:
-                print("Need to specify page1 and page2")
-                exit(-1)
-            pages = convert_from_path(args.file)
-            print(f"Number of pages in the PDF file = {len(pages)}")
-            if args.page1 >= len(pages) or args.page2 >= len(pages):
-                print(f"Page {args.page1} or Page {args.page2} is more than the number of pages {len(pages)} ")
-                exit(-2)
-            img_0 = np.array(pages[args.page1])
-            img_1 = np.array(pages[args.page2])
-        else:
-            if not args.file2:
-                print("Need to specify file2")
-                exit(-3)
-            img_0 = cv2.imread(args.file)
-            img_1 = cv2.imread(args.file2)
-        if args.vertical and self.mode == 'stitch':
-            img_0 = cv2.rotate(img_0, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            img_1 = cv2.rotate(img_1, cv2.ROTATE_90_CLOCKWISE)
-        print("-- Images --")
-        print(f"Sizes: {img_0.size} // {img_1.size}")
-        print(f"Shapes: {img_0.shape} // {img_1.shape}")
-        return img_0, img_1
-
-    def parse_args(self):
+    @classmethod
+    def parse_args(cls):
         parser = argparse.ArgumentParser(
                             prog='pdf_stitcher',
                             description='Stitches 2 pages of a PDF file  (or 2 image files)')
         parser.add_argument('-c', '--concatenate', action='store_true', help='Concatenate images - No stitching')
-        parser.add_argument('-f', '--file', required=True, help='File name (PDF or an  image)')
+        parser.add_argument('-f', '--file', dest='file1', required=True, help='File name (PDF or an  image)')
         parser.add_argument('--file2', help='Second Image if first file is an image')
         parser.add_argument('--page1', type=int, default=0, help='First page of the PDF file')
         parser.add_argument('--page2', type=int, default=0, help='Second page of the PDF file')
         parser.add_argument('-v', '--vertical', action='store_true', help='Supported only for concatenate')
         args = parser.parse_args()
         print(f"Arguments = {args}")
+        if args.file1.endswith('.pdf'): # PDF File
+            if not args.page1 and not args.page2:
+                print("Need to specify page1 and page2 for PDF stitching")
+                exit(-1)
+        elif not args.file2:
+                print("Need to specify second image file")
+                exit(-2)
         return args
 
+    def get_output_filename(self, file1, file2, page1, page2):
+        _base_dir = os.path.dirname(file1)
+        _base_name = os.path.basename(file1)
+        _base_name = os.path.splitext(_base_name)[0]
+        return os.path.join(_base_dir, f"{_base_name}_p{page1}{page2}.png")
+
+    def setup_images(self, file1, file2, page1, page2):
+        if file1.endswith('.pdf'): # PDF File
+            pages = convert_from_path(file1)
+            print(f"Number of pages in the PDF file = {len(pages)}")
+            if page1 >= len(pages) or page2 >= len(pages):
+                print(f"Page {page1} or Page {page2} is more than the number of pages {len(pages)} ")
+                exit(-2)
+            img_0 = np.array(pages[page1])
+            img_1 = np.array(pages[page2])
+        else: # Image files
+            img_0 = cv2.imread(file1)
+            img_1 = cv2.imread(file2)
+        if not self.horizontal and self.mode == 'stitch':
+            img_0 = cv2.rotate(img_0, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            img_1 = cv2.rotate(img_1, cv2.ROTATE_90_CLOCKWISE)
+        print("-- Images to be Processed --")
+        print(f"Sizes: {img_0.size} // {img_1.size}")
+        print(f"Shapes: {img_0.shape} // {img_1.shape}")
+        return img_0, img_1
+
     def process(self):
-        if self.mode == 'stitch':
+        if self.mode == 'stitch' and self.show_keypoint_matches:
             (result, vis) = self.stitch(showMatches=True)
             cv2.imshow("Keypoint Matches", vis)
+        elif self.mode == 'stitch':
+            result = self.stitch()
         else:
             result = self.concatenate()
 
         if result.any():
             print()
             if self.mode == 'stitch':
-                _base_dir = os.path.dirname(self.args.file)
-                _base_name = os.path.basename(self.args.file)
-                _file_name = os.path.join(_base_dir, f"{_base_name}_p{self.args.page1}{self.args.page2}.png")
-                print(f"Writing to file: {_file_name}")
-                cv2.imwrite(_file_name,result)
+                print(f"Writing to file: {self.output_file}")
+                cv2.imwrite(self.output_file, result)
             # opencv code to view image
             img = cv2.resize(result, None, fx=0.5, fy=0.5)
             cv2.imshow("img", img)
@@ -116,7 +124,7 @@ class Stitcher:
         result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
 
         # if vertical, we turn it clockwise to make it vertical!
-        if self.args.vertical:
+        if not self.horizontal:
             result = cv2.rotate(result, cv2.ROTATE_90_CLOCKWISE)
 
         # check to see if the keypoint matches should be visualized
@@ -204,5 +212,8 @@ class Stitcher:
 
 # Main Logic: Execute when the module is not initialized from an import statement.
 if __name__ == '__main__':
-    stitcher = Stitcher()
+    args = Stitcher.parse_args()
+    stitcher = Stitcher(
+        args.file1, args.file2, args.page1, args.page2, concatenate=args.concatenate, vertical=args.vertical
+    )
     stitcher.process()
